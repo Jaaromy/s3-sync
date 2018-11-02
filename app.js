@@ -1,51 +1,72 @@
 #!/usr/bin/env node
 
-const fs = require("fs");
+const pm2 = require("pm2");
 const shell = require("shelljs");
-const chokidar = require("chokidar");
-
-const argv = require("yargs")
+const yargs = require("yargs");
+const argv = yargs
+  .options({
+    source: {
+      alias: "s",
+      describe: "local source directory, file, or blob"
+    },
+    bucket: {
+      alias: "b",
+      describe: "S3 bucket (with optional path) that is destination of sync"
+    },
+    list: {
+      describe: "list active syncs"
+    },
+    logs: {
+      alias: "l",
+      describe: "show last 15 lines of logs"
+    },
+    stop: {
+      describe: "stop watching all sources"
+    }
+  })
   .usage("Watch a local file, directory, or glob for changes and sync them to an s3 bucket (or bucket and path). Must have aws CLI installed.")
   .usage("")
   .usage("Usage: $0 -s [string] -b [string]")
-  .alias("s", "source")
-  .alias("b", "bucket")
   .help("h")
   .alias("h", "help")
-  .demandOption(["s", "b"])
   .example("$0 -s '/path/to/file/or/directory' -b 's3-bucket/and/path'")
   .example("$0 --source '/a/glob/*/**' --bucket 's3-bucket'").argv;
 
-if (!fs.existsSync(argv.source)) {
-  console.error(`Path '${argv.source}' does not exist`);
-  process.exit(1);
+if (argv.list) {
+  shell.exec(`./node_modules/.bin/pm2 list`);
+  return;
 }
 
-console.log(`Watching ${argv.source}`);
+if (argv.logs) {
+  shell.exec(`./node_modules/.bin/pm2 logs --nostream`);
+  return;
+}
 
-function sync() {
-  try {
-    let res = shell.exec(`aws s3 sync ${argv.source} s3://${argv.bucket} --delete`);
+if (argv.stop) {
+  shell.exec(`./node_modules/.bin/pm2 delete sync-s3`);
+  return;
+}
 
-    if (res.stdout) {
-      console.log(res.stdout);
+if (!argv.bucket && !argv.source) {
+  console.log("");
+  console.error("Missing required arguments: source, bucket");
+  console.log("s3-sync --help");
+  return;
+}
+
+if (!argv.list && !argv.help) {
+  pm2.start(
+    {
+      name: "sync-s3",
+      script: "sync.js",
+      args: [argv.source, argv.bucket]
+    },
+    function(err) {
+      pm2.disconnect(); // Disconnects from PM2
+
+      if (err) throw err;
+
+      process.exit(0);
     }
-  } catch (err) {
-    console.error(err);
-  }
+  );
 }
-
-let watcher = chokidar.watch(argv.source, { ignored: /(^|[\/\\])\.DS_Store/, ignoreInitial: true });
-
-watcher.on("ready", () => {
-  sync();
-});
-
-watcher.on("all", (eventType, filename) => {
-  sync(eventType, filename);
-});
-
-watcher.on("error", err => {
-  console.error(err);
-  process.exit(1);
-});

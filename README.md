@@ -1,9 +1,9 @@
 # s3-sync
 
-## Install
+## Install from NPM
 
 ```bash
-npm install
+npm install @jaaromy/s3-sync -g
 s3-sync -s '.' -b 'my-bucket'
 ```
 
@@ -13,28 +13,22 @@ s3-sync -s '.' -b 'my-bucket'
 s3-sync --help
 ```
 
-```text
-Watch a local file, directory, or glob for changes and sync them to an s3 bucket (or bucket and path). Must have aws CLI installed.
+````text
+Watch a local file, directory, or glob for changes and sync them to an
+s3 bucket (or bucket and path). Must have AWS CLI installed.
 
 Usage: app.js -s [string] -b [string]
 
 Options:
   --version     Show version number                                    [boolean]
+  --source, -s  local source directory, file, or blob
+  --bucket, -b  S3 bucket (with optional path) that is destination of sync
+  --list        list active syncs
+  --logs, -l    show last 15 lines of logs
+  --stop        stop watching all sources
   -h, --help    Show help                                              [boolean]
-  -s, --source                                                        [required]
-  -b, --bucket                                                        [required]
 
 Examples:
-  s3-sync -s '/path/to/file/or/directory' -b 's3-bucket/and/path'
-  s3-sync --source '/a/glob/*/**' --bucket 's3-bucket'
-```
-
-## Use Built in PM2
-
-```bash
-npm run sync -- -s '/path/to/file/or/directory' -b 's3-bucket'
-npm run stop
-npm run monitor # Monitor the process in PM2's app
-npm run status # Quick status
-npm run logs # A tail of the most recent logs
-```
+  app.js -s '/path/to/file/or/directory' -b 's3-bucket/and/path'
+  app.js --source '/a/glob/*/**' --bucket 's3-bucket'```
+````
