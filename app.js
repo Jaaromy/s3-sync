@@ -3,6 +3,9 @@
 const pm2 = require("pm2");
 const shell = require("shelljs");
 const yargs = require("yargs");
+
+const { getInstalledPath } = require("get-installed-path");
+
 const argv = yargs
   .options({
     source: {
@@ -32,41 +35,47 @@ const argv = yargs
   .example("$0 -s '/path/to/file/or/directory' -b 's3-bucket/and/path'")
   .example("$0 --source '/a/glob/*/**' --bucket 's3-bucket'").argv;
 
-if (argv.list) {
-  shell.exec(`./node_modules/.bin/pm2 list`);
-  return;
+async function checkArgs() {
+  let pm2Path = await getInstalledPath("pm2", { local: true });
+
+  if (argv.list) {
+    shell.exec(`${pm2Path}/bin/pm2 list`);
+    return;
+  }
+
+  if (argv.logs) {
+    shell.exec(`${pm2Path}/bin/pm2 logs --nostream`);
+    return;
+  }
+
+  if (argv.stop) {
+    shell.exec(`${pm2Path}/bin/pm2 delete sync-s3`);
+    return;
+  }
+
+  if (!argv.bucket && !argv.source) {
+    console.log("");
+    console.error("Missing required arguments: source, bucket");
+    console.log("s3-sync --help");
+    return;
+  }
+
+  if (!argv.list && !argv.help) {
+    pm2.start(
+      {
+        name: "sync-s3",
+        script: "sync.js",
+        args: [argv.source, argv.bucket]
+      },
+      function(err) {
+        pm2.disconnect(); // Disconnects from PM2
+
+        if (err) throw err;
+
+        process.exit(0);
+      }
+    );
+  }
 }
 
-if (argv.logs) {
-  shell.exec(`./node_modules/.bin/pm2 logs --nostream`);
-  return;
-}
-
-if (argv.stop) {
-  shell.exec(`./node_modules/.bin/pm2 delete sync-s3`);
-  return;
-}
-
-if (!argv.bucket && !argv.source) {
-  console.log("");
-  console.error("Missing required arguments: source, bucket");
-  console.log("s3-sync --help");
-  return;
-}
-
-if (!argv.list && !argv.help) {
-  pm2.start(
-    {
-      name: "sync-s3",
-      script: "sync.js",
-      args: [argv.source, argv.bucket]
-    },
-    function(err) {
-      pm2.disconnect(); // Disconnects from PM2
-
-      if (err) throw err;
-
-      process.exit(0);
-    }
-  );
-}
+checkArgs();

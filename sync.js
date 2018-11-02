@@ -1,8 +1,6 @@
 const shell = require("shelljs");
 const chokidar = require("chokidar");
 
-console.log(JSON.stringify(process.argv));
-
 let source = process.argv[2];
 let bucket = process.argv[3];
 
