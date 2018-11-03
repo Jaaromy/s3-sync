@@ -1,6 +1,6 @@
 {
   "name": "@jaaromy/s3-sync",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Watch a local file, directory, or glob for changes and sync them to an s3 bucket (or bucket and path).",
   "main": "app.js",
   "bin": {
