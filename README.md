@@ -1,2 +1,34 @@
 # s3-sync
-Sync a local folder, file, or glob to an S3 bucket
+
+## Install from NPM
+
+```bash
+npm install @jaaromy/s3-sync -g
+s3-sync -s '.' -b 'my-bucket'
+```
+
+## Console Help Contents
+
+```bash
+s3-sync --help
+```
+
+````text
+Watch a local file, directory, or glob for changes and sync them to an
+s3 bucket (or bucket and path). Must have AWS CLI installed.
+
+Usage: app.js -s [string] -b [string]
+
+Options:
+  --version     Show version number                                    [boolean]
+  --source, -s  local source directory, file, or blob
+  --bucket, -b  S3 bucket (with optional path) that is destination of sync
+  --list        list active syncs
+  --logs, -l    show last 15 lines of logs
+  --stop        stop watching all sources
+  -h, --help    Show help                                              [boolean]
+
+Examples:
+  app.js -s '/path/to/file/or/directory' -b 's3-bucket/and/path'
+  app.js --source '/a/glob/*/**' --bucket 's3-bucket'```
+````
