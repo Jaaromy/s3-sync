@@ -3,6 +3,11 @@
 const pm2 = require("pm2");
 const shell = require("shelljs");
 const yargs = require("yargs");
+const Promise = require("bluebird");
+const npm = require("npm");
+
+Promise.promisifyAll(npm);
+Promise.promisifyAll(pm2);
 
 const argv = yargs
   .options({
@@ -33,42 +38,51 @@ const argv = yargs
   .example("$0 -s '/path/to/file/or/directory' -b 's3-bucket/and/path'")
   .example("$0 --source '/a/glob/*/**' --bucket 's3-bucket'").argv;
 
-console.log(process.cwd());
-let pm2Path = `${process.cwd()}/node_modules/.bin/pm2`; //await getInstalledPath("pm2", { local: true });
+async function start(argv) {
+  try {
+    let myConfigObject = {};
 
-if (argv.list) {
-  shell.exec(`${pm2Path} list`);
-  return;
-}
+    await npm.loadAsync(myConfigObject);
 
-if (argv.logs) {
-  shell.exec(`${pm2Path} logs --nostream`);
-  return;
-}
+    let prefix = npm.globalDir;
 
-if (argv.stop) {
-  shell.exec(`${pm2Path} delete sync-s3`);
-  return;
-}
+    let pm2Path = `${prefix}/@jaaromy/s3-sync/node_modules/.bin/pm2`; //await getInstalledPath("pm2", { local: true });
 
-if (!argv.bucket && !argv.source) {
-  console.log("");
-  console.error("Missing required arguments: source, bucket");
-  console.log("s3-sync --help");
-  return;
-}
+    if (argv.list) {
+      shell.exec(`${pm2Path} list`);
+      return;
+    }
 
-pm2.start(
-  {
-    name: "sync-s3",
-    script: "sync.js",
-    args: [argv.source, argv.bucket]
-  },
-  function(err) {
-    pm2.disconnect(); // Disconnects from PM2
+    if (argv.logs) {
+      shell.exec(`${pm2Path} logs --nostream`);
+      return;
+    }
 
-    if (err) throw err;
+    if (argv.stop) {
+      shell.exec(`${pm2Path} delete sync-s3`);
+      return;
+    }
 
+    if (!argv.bucket && !argv.source) {
+      console.log("");
+      console.error("Missing required arguments: source, bucket");
+      console.log("s3-sync --help");
+      return;
+    }
+
+    await pm2.startAsync({
+      name: "sync-s3",
+      script: "sync.js",
+      args: [argv.source, argv.bucket]
+    });
+
+    pm2.disconnect();
+  } catch (err) {
+    console.error(err);
+    process.exit(1);
+  } finally {
     process.exit(0);
   }
-);
+}
+
+start(argv);
