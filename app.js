@@ -44,9 +44,9 @@ async function start(argv) {
 
     await npm.loadAsync(myConfigObject);
 
-    let prefix = npm.globalDir;
+    let prefix = npm.globalDir + "/@jaaromy/s3-sync";
 
-    let pm2Path = `${prefix}/@jaaromy/s3-sync/node_modules/.bin/pm2`; //await getInstalledPath("pm2", { local: true });
+    let pm2Path = `${prefix}/node_modules/.bin/pm2`; //await getInstalledPath("pm2", { local: true });
 
     if (argv.list) {
       shell.exec(`${pm2Path} list`);
@@ -59,7 +59,7 @@ async function start(argv) {
     }
 
     if (argv.stop) {
-      shell.exec(`${pm2Path} delete sync-s3`);
+      shell.exec(`${pm2Path} delete s3-sync`);
       return;
     }
 
@@ -71,8 +71,8 @@ async function start(argv) {
     }
 
     await pm2.startAsync({
-      name: "sync-s3",
-      script: "sync.js",
+      name: "s3-sync",
+      script: `${prefix}/sync.js`,
       args: [argv.source, argv.bucket]
     });
 
